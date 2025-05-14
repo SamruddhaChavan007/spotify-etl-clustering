@@ -1,37 +1,32 @@
+import pandas as pd
 import os
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 import json
-import pandas as pd
-from spotipy.util import prompt_for_user_token
 
 load_dotenv()
 
-token = prompt_for_user_token(
-    username=None,
+sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     client_id=os.getenv("SPOTIPY_CLIENT_ID"),
     client_secret=os.getenv("SPOTIPY_CLIENT_SECRET"),
     redirect_uri=os.getenv("SPOTIPY_REDIRECT_URI"),
-    scope="playlist-read-private",
-)
-
-sp = spotipy.Spotify(auth=token)
-
+    scope="playlist-read-private"
+))
 
 
 playlists = {
-    "Top 50 India": "37i9dQZEVXbLZ52XmnySJg"#,
-    # "Top Songs Global": "37i9dQZEVXbNG2KDcFcKOF",
-    # "Top Viral Global": "37i9dQZEVXbLiRSasKsNU9",
-    # "Top 50 India": "37i9dQZEVXbLZ52XmnySJg",
-    # "Top Songs India": "37i9dQZEVXbMWDif5SCBJq",
-    # "Top Viral India": "37i9dQZEVXbK4NvPi6Sxit"
+    "Most Played Songs 2025": "6IoAdfkxFwfTY4Ug7TVRMY",
+    "Pop Playlist 2025": "2UZk7JjJnbTut1w8fqs3JL",
+    "Rap Playlist 2025": "4nZo2X8iHrwhYBYdKvysgI",
+    "Calm": "0ldH4ltKERLCOH3zsEcQm0",
+    "Rock": "4aQsjBuSIy3yUs8w6I2OQr",
+    "Indie Folk Feel": "6je4qaBiNqjgxYdq6g1ABc"
 }
 
 
 def get_playlist_tracks(sp, playlist_name, playlist_id):
-    print(f"Extracting from: {playlist_name}")
+    print(f"📥 Extracting from: {playlist_name}")
     results = sp.playlist_tracks(playlist_id)
     tracks = []
 
@@ -54,13 +49,13 @@ for name, pid in playlists.items():
     tracks = get_playlist_tracks(sp, name, pid)
     all_tracks.extend(tracks)
 
-# Saving file as JSON
+# Save JSON
+
 with open("data/raw/playlists_raw.json", "w") as f:
     json.dump(all_tracks, f, indent=4)
 
-# Save the file as CSV
+# Save CSV
 df = pd.DataFrame(all_tracks)
-df.to_csv("data/raw/tracks.csv", index=False)
-
-
-print("All playlists tracks saved.")
+if not df.empty:
+    df.to_csv("data/raw/tracks.csv", index=False)
+    print("✅ All playlist tracks saved.")

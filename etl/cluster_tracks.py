@@ -1,27 +1,61 @@
 import pandas as pd
-from matplotlib import pyplot as pt
-import os
-import numpy as np
 from sklearn.cluster import KMeans
+import logging
 
-dataset_path = "data/processed data/spotify_features_final.csv"
-output_path = "data/processed data/spotify_features_clustered.csv"
-df = pd.read_csv(dataset_path)
-print(list(df.columns))
+logging.basicConfig(
+    filename='logs/etl_errors.log',
+    level=logging.ERROR,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
-# ---------- Select Audio Features ----------
-audio_features = [
-    'danceability', 'energy', 'loudness', 'speechiness', 'acousticness',
-    'instrumentalness', 'liveness', 'valence', 'tempo'
-]
-X = df[audio_features]
+#---------------------Load the dataset---------------------
+def load_dataset(path, label):
+    try:
+        dataframe = pd.read_csv(path)
+        print(f"Loaded {label} dataset with {len(dataframe)} rows.")
+        return dataframe
+    except Exception as e:
+        logging.error(f"Failed to load {label} dataset from the {path}: {e}")
+        return pd.DataFrame()
 
-kmeans = KMeans(n_clusters=4, random_state=42)
-y_predicted = kmeans.fit_predict(X)
+#---------------------K Means Algorithm---------------------
+def kmean_algorithm(df, audio_features):
+    try:
+        X = df[audio_features]
+        kmeans = KMeans(n_clusters=4, random_state=42)
+        df['K-Means Cluster'] = kmeans.fit_predict(X)
+        print(f"Clustering complete. Columns now: {list(df.columns)}")
+        return df
+    except Exception as e:
+        logging.error(f"KMeans clustering failed: {e}")
 
-print(y_predicted)
+#---------------------Save the dataset---------------------
+def save_dataset(df, output_path):
+    try:
+        df.to_csv(output_path, index=False)
+        print(f"Saved the processed dataset to {output_path}")
+    except Exception as e:
+        logging.error(f"Failed to save the dataset: {e}")
 
-df['K-Means Cluster'] = y_predicted
-print(list(df.columns))
+#---------------------Main Function---------------------
+def main():
+    dataset_path = "data/processed data/spotify_features_final.csv"
+    output_path = "data/processed data/spotify_features_clustered.csv"
 
-df.to_csv(output_path, index=False)
+    # Load the datasets
+    kaggle_dataframe = load_dataset(
+        dataset_path, 'Kaggle Dataset')
+
+    # ---------- Select Audio Features ----------
+    audio_features = [
+        'danceability', 'energy', 'loudness', 'speechiness', 'acousticness',
+        'instrumentalness', 'liveness', 'valence', 'tempo'
+    ]
+
+    if not kaggle_dataframe.empty:
+        kaggle_dataframe = kmean_algorithm(kaggle_dataframe, audio_features)
+        save_dataset(kaggle_dataframe, output_path)
+
+
+if __name__ == '__main__':
+    main()
